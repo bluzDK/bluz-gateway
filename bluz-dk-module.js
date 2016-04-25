@@ -293,6 +293,7 @@ BluzDKModule.prototype.processData = function(data) {
             this.writeToCloud(tmpBuffer);
         } else if (this.lastService == 0x02) {
             log.warn('Bluz ' + instance.id + ':', "Device ID:", tmpBuffer.toString('hex'));
+            this.particleId = tmpBuffer.toString('hex');
             // TODO: Implement device id handling
 
 
