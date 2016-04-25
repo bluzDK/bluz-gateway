@@ -8,6 +8,9 @@ can change debug level by: `DEBUG=debug ~/node_modules/.bin/bluz-gateway`
 
 valid debug levels are `trace, debug, info, warn, error`
 
+View information about connected devices once it's running with `curl  http://localhost:3000/connected-devices`
+
+
 ## Basic installation on C.H.I.P.
 ```bash
 curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash - # to get latest nodejs
