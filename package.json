@@ -2,7 +2,7 @@
   "name": "bluz-gateway",
   "version": "0.0.1",
   "description": "NodeJS gateway for the Bluz to the Particle Cloud",
-  "main": "index.js",
+  "main": "./index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
