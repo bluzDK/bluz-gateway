@@ -10,7 +10,15 @@ const BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db2';
 const BLUZ_WRITE_CHAR = '871e022538ff77b1ed419fb3aa142db2';
 const BLUZ_READ_CHAR = '871e022438ff77b1ed419fb3aa142db2';
 
-log.setDefaultLevel('info');
+var log = require('loglevel')
+
+var debuglevel= process.env.DEBUG;
+var loggingLevels= ['trace','debug','info','warn','error'];
+if (loggingLevels.indexOf(debuglevel) > -1) {
+        log.setDefaultLevel(debuglevel);
+} else {
+        log.setDefaultLevel('warn');
+}
 
 
 function BluzDKModule(peripheral, destroycallback) {
@@ -266,7 +274,7 @@ BluzDKModule.prototype.processData = function(data) {
 
             this.writeToCloud(tmpBuffer);
         } else if (this.lastService == 0x02) {
-            log.info('Bluz ' + instance.id + ':', "Device ID:", tmpBuffer.toString('hex'));
+            log.warn('Bluz ' + instance.id + ':', "Device ID:", tmpBuffer.toString('hex'));
             // TODO: Implement device id handling
 
 

@@ -1,6 +1,13 @@
 # Bluz Node Gateway
 
-run with node index.js.  currently logging is set pretty verbose.  Works on at least two DKs on the C.H.I.P.
+Works on at least two DKs on the C.H.I.P.
+
+Defaults to installing in ~/node_modules/.bin/bluz-gateway
+
+can change debug level by: `DEBUG=debug ~/node_modules/.bin/bluz-gateway`
+
+valid debug levels are `trace, debug, info, warn, error`
+
 ## Basic installation on C.H.I.P.
 ```bash
 curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash - # to get latest nodejs
@@ -13,6 +20,9 @@ sudo setcap cap_net_raw+eip $(eval readlink -f `which node`)  # needed to run wi
 
 echo 'export PATH=$PATH:~/node_modules/.bin/' >> ~/.bashrc  # to add the binary to path
 ```
+
+Init script example is shown in examples/init/.  Copy to /etc/init.d/ and set executable, edit the 3 lines that are localized to the user directory, and run `update-rc.d bluz-gateway defaults` to have the gateway start on reboot
+
 
 ## Some basic info about the Bluz- Particle bridging
 

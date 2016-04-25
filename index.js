@@ -8,7 +8,17 @@ var noble = require('noble');
 
 
 var log = require('loglevel')
-log.setDefaultLevel('debug');
+
+var log = require('loglevel')
+
+var debuglevel= process.env.DEBUG;
+var loggingLevels= ['trace','debug','info','warn','error'];
+if (loggingLevels.indexOf(debuglevel) > -1) {
+    log.setDefaultLevel(debuglevel);
+} else {
+    log.setDefaultLevel('warn');
+}
+
 
 var BluzDKModule = require('./bluz-dk-module.js');
 
@@ -65,7 +75,7 @@ noble.on('discover', function(peripheral) {
 
         noble.stopScanning(); // turn off scanning while connecting HACK?
 
-        log.info('Master found peripheral with ID ' + peripheral.id + ' and Name ' + peripheral.advertisement.localName);
+        log.warn('Master found peripheral with ID ' + peripheral.id + ' and Name ' + peripheral.advertisement.localName);
 
         peripheralList[peripheral.id] = {
             found: true,
