@@ -2,12 +2,11 @@
 
 //var async = require('async');
 var noble = require('noble');
+var express = require('express');
 
 //var sleep = require('sleep');
 //var net = require('net');
 
-
-var log = require('loglevel')
 
 var log = require('loglevel')
 
@@ -19,10 +18,15 @@ if (loggingLevels.indexOf(debuglevel) > -1) {
     log.setDefaultLevel('warn');
 }
 
+var server = express();
+
 
 var BluzDKModule = require('./bluz-dk-module.js');
 
 const BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db2';
+
+var serverPort = 3000;
+
 // const BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db3'; // WRONG: USED FOR TESTING ONLY
 
 //~ var BLUZ_WRITE_CHAR = '871e022538ff77b1ed419fb3aa142db2';
@@ -48,9 +52,32 @@ noble.on('warning', function(message) {
 });
 
 
-var peripheralList = [];
+var peripheralList = {};
 
-var removing = [];
+var removing = {};
+
+server.get('/connected-devices', function(req, res) {
+    var jsonreturn={};
+    log.debug('Server Got request with headers',req.headers);
+//    log.debug(peripheralList);
+    for (var index in peripheralList) {
+        periph=peripheralList[index].dkModule;
+
+        jsonreturn[periph.id] = {
+            "id": periph.id,
+            "particle-id": periph.particleId,
+            "rssi": periph.rssi,
+            "uptime": (Date.now() - periph.connectedTime)/1000
+        };
+    }
+    res.contentType('application/json');
+    res.send(JSON.stringify(jsonreturn));
+});
+
+server.listen(serverPort, function () {
+    log.debug("Started server on port", serverPort);
+});
+
 
 function deletePeripheral(id) {
     // TODO: Replace with event based deletion

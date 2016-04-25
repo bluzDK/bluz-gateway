@@ -1,6 +1,6 @@
 {
   "name": "bluz-gateway",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "NodeJS gateway for the Bluz to the Particle Cloud",
   "main": "./index.js",
   "scripts": {
@@ -15,7 +15,8 @@
   "dependencies": {
     "noble": "^1.3.0",
     "loglevel": "^1.4.0",
-    "bluetooth-hci-socket": "~0.4.1"
+    "bluetooth-hci-socket": "~0.4.1",
+    "express": "^4.13.4"
   },
   "bin": "./index.js"
 }

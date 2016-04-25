@@ -10,7 +10,8 @@ const BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db2';
 const BLUZ_WRITE_CHAR = '871e022538ff77b1ed419fb3aa142db2';
 const BLUZ_READ_CHAR = '871e022438ff77b1ed419fb3aa142db2';
 
-var log = require('loglevel')
+const PARTICLE_SERVER = 'device.spark.io';
+const PARTICLE_PORT = '5683';
 
 var debuglevel= process.env.DEBUG;
 var loggingLevels= ['trace','debug','info','warn','error'];
@@ -24,6 +25,8 @@ if (loggingLevels.indexOf(debuglevel) > -1) {
 function BluzDKModule(peripheral, destroycallback) {
 
     var instance = this;
+    
+    this.connectedTime = Date.now();
 
     this.clientStatus = 0; // 0 -> disconnected, 1-> connecting, 2-> connected
 
@@ -31,6 +34,9 @@ function BluzDKModule(peripheral, destroycallback) {
     this.peripheral = peripheral;
     this.id = peripheral.id;
     this.connected = true;
+       
+    this.particleId = null;
+    this.rssi = null;
 
     // Characteristics
     this.writeToDkCharacteristic = null;
@@ -80,8 +86,20 @@ function BluzDKModule(peripheral, destroycallback) {
 
 
     this.connectToDK();
-
+    
+    this.updateRssi();
+    
 };
+
+BluzDKModule.prototype.updateRssi = function() {
+    var instance = this;
+    if (this.connected) this.peripheral.updateRssi( function (error, rssi) {
+        instance.rssi=rssi;
+        log.debug('Bluz ' + instance.id + ': RSSI:', rssi);
+        setTimeout(function() { instance.updateRssi() }, 10000);
+    });
+}
+
 
 BluzDKModule.prototype.connectToDK = function() {
 
@@ -189,7 +207,7 @@ BluzDKModule.prototype.clientconnect = function() {
         log.debug('Bluz ' + instance.id + ':', 'still connecting to cloud...')
     } else if (this.clientStatus == 0) {
         log.debug('Bluz ' + instance.id + ':', 'connecting to cloud...')
-        this.client.connect(5683, 'device.spark.io');
+        this.client.connect(PARTICLE_PORT, PARTICLE_SERVER);
     }
 };
 
