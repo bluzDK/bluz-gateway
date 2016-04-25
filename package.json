@@ -13,7 +13,6 @@
   "author": "Daniel Sullivan",
   "license": "MIT",
   "dependencies": {
-    "bluetooth-hci-socket": "^0.4.3",
     "noble": "^1.3.0",
     "loglevel": "^1.4.0"
   }
