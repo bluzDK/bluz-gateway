@@ -1,6 +1,18 @@
 # Bluz Node Gateway
 
 run with node index.js.  currently logging is set pretty verbose.  Works on at least two DKs on the C.H.I.P.
+## Basic installation on C.H.I.P.
+```bash
+curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash - # to get latest nodejs
+
+sudo apt-get install bluetooth bluez libbluetooth-dev libudev-dev nodejs git  # dependencies
+
+npm install mumblepins/bluz-gateway # could also with -g for global usage
+
+sudo setcap cap_net_raw+eip $(eval readlink -f `which node`)  # needed to run without sudo
+
+echo 'export PATH=$PATH:~/node_modules/.bin/' >> ~/.bashrc  # to add the binary to path
+```
 
 ## Some basic info about the Bluz- Particle bridging
 
