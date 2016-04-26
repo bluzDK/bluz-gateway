@@ -71,6 +71,7 @@ server.get('/connected-devices', function(req, res) {
         };
     }
     res.contentType('application/json');
+    res.set("Access-Control-Allow-Origin", "*");  // allow access from other ports
     res.send(JSON.stringify(jsonreturn));
 });
 
