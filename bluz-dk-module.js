@@ -105,16 +105,19 @@ BluzDKModule.prototype.connectToDK = function() {
 
     var instance = this;
     // setup peripheral
-    this.peripheral.on('disconnect', function() {
+    this.peripheral.once('disconnect', function() {
+		log.debug('Bluz ' + instance.id + ' Disconnected');
         instance.connected = false;
 
         instance.client.end();
 
 
 
-        setTimeout(function() {
-            if (instance.destroycallback()) instance.destroycallback
-        }, 1000);
+        //setTimeout(function() {
+        //    if (instance.destroycallback()) instance.destroycallback
+        //}, 1000);
+        
+        instance.destroycallback();
     });
 
     instance.peripheral.discoverServices([BLUZ_SERVICE_UUID], function(error, services) {

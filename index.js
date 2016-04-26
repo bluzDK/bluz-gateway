@@ -62,13 +62,14 @@ server.get('/connected-devices', function(req, res) {
 //    log.debug(peripheralList);
     for (var index in peripheralList) {
         periph=peripheralList[index].dkModule;
-
-        jsonreturn[periph.id] = {
-            "id": periph.id,
-            "particle-id": periph.particleId,
-            "rssi": periph.rssi,
-            "uptime": (Date.now() - periph.connectedTime)/1000
-        };
+        if (periph != null) {
+            jsonreturn[periph.id] = {
+                "id": periph.id,
+                "particle-id": periph.particleId,
+                "rssi": periph.rssi,
+                "uptime": (Date.now() - periph.connectedTime)/1000
+            };
+        }
     }
     res.contentType('application/json');
     res.set("Access-Control-Allow-Origin", "*");  // allow access from other ports
@@ -82,20 +83,22 @@ server.listen(serverPort, function () {
 
 function deletePeripheral(id) {
     // TODO: Replace with event based deletion
-    if (!removing[id]) {
-        removing[id] = true;
-    } else {
-        return;
-    }
+//    if (!removing[id]) {
+//        removing[id] = true;
+//    } else {
+//        return;
+//    }
+    noble.stopScanning(); // Not sure if necessary, but probably doesn't hurt
     if (peripheralList[id]) {
 
         log.info('removing peripheral', id);
         delete peripheralList[id].dkModule;
-        setTimeout(function() {
+        //setTimeout(function() {
             delete peripheralList[id];
-            delete removing[id];
-        }, 1500);
+        //    delete removing[id];
+        //}, 1500);
     }
+    noble.startScanning();
 }
 
 noble.on('discover', function(peripheral) {
