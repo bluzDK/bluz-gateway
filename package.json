@@ -1,6 +1,6 @@
 {
   "name": "bluz-gateway",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "NodeJS gateway for the Bluz to the Particle Cloud",
   "main": "./index.js",
   "scripts": {

@@ -153,7 +153,7 @@ BluzDKModule.prototype.connectToDK = function() {
                                             log.trace('Bluz ' + instance.id + ':', "write descriptor");
 
                                             descriptor.once('valueWrite', function() {
-                                                log.trace('Bluz ' + instance.id + ':', 'wrote descriptor');
+                                                log.debug('Bluz ' + instance.id + ':', 'wrote descriptor');
                                                 instance.setupDkReaders(characteristic, function() {
                                                     var requestIdBuffer = new Buffer([0x02, 0x00]);
                                                     instance.writeToDK(requestIdBuffer, null, function() {
@@ -166,7 +166,7 @@ BluzDKModule.prototype.connectToDK = function() {
                                                 //~ setTimeout(function() {	this.clientconnect(); }, 3000);
                                             });
                                             descriptor.writeValue(new Buffer([0x01, 0x00]), function(error) {
-                                                log.debug('Bluz ' + instance.id + ':', 'descript error', error)
+                                                if (error) log.debug('Bluz ' + instance.id + ':', 'descript error', error)
                                             });
                                         };
 
@@ -237,7 +237,7 @@ BluzDKModule.prototype.writeToDK = function(data, header, callback) {
             log.trace('Bluz ' + instance.id + ':', 'ChunkLength', chunkLength);
             if (header != null) {
                 this.safeWrite(header);
-                log.debug('Bluz ' + instance.id + ':', 'sent header');
+                log.debug('Bluz ' + instance.id + ':', 'Sent header to DK');
             }
             for (i = 0; i < chunkLength; i += 20) {
                 var size = (chunkLength - i > 20 ? 20 : chunkLength - i);
@@ -253,7 +253,7 @@ BluzDKModule.prototype.writeToDK = function(data, header, callback) {
             }
 
             var eosBuffer = new Buffer([0x03, 0x04]);
-            log.info('Bluz ' + instance.id + ':', 'Wrote EOS to DK, write length:', chunkPointer + chunkLength);
+            log.info('Bluz ' + instance.id + ':', 'Wrote EOS to DK, total write length:', chunkPointer + chunkLength);
             this.safeWrite(eosBuffer);
         }
     }
