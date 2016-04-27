@@ -1,10 +1,17 @@
 const noble = require('noble');
-//const EventEmitter = require('events');
 const util = require('util');
-
 var log = require('loglevel');
-
 const net = require('net');
+var settings=require('./settings.js');
+
+//~ var debuglevel= settings.get('debug');
+//~ var loggingLevels= ['trace','debug','info','warn','error'];
+//~ if (loggingLevels.indexOf(debuglevel) > -1) {
+    //~ log.setDefaultLevel(debuglevel);
+//~ } else {
+    //~ log.setDefaultLevel('error');
+//~ }
+
 
 const BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db2';
 const BLUZ_WRITE_CHAR = '871e022538ff77b1ed419fb3aa142db2';
@@ -13,13 +20,13 @@ const BLUZ_READ_CHAR = '871e022438ff77b1ed419fb3aa142db2';
 const PARTICLE_SERVER = 'device.spark.io';
 const PARTICLE_PORT = '5683';
 
-var debuglevel= process.env.DEBUG;
-var loggingLevels= ['trace','debug','info','warn','error'];
-if (loggingLevels.indexOf(debuglevel) > -1) {
-        log.setDefaultLevel(debuglevel);
-} else {
-        log.setDefaultLevel('warn');
-}
+//~ var debuglevel= process.env.DEBUG;
+//~ var loggingLevels= ['trace','debug','info','warn','error'];
+//~ if (loggingLevels.indexOf(debuglevel) > -1) {
+        //~ log.setDefaultLevel(debuglevel);
+//~ } else {
+        //~ log.setDefaultLevel('warn');
+//~ }
 
 
 function BluzDKModule(peripheral, destroycallback) {
@@ -210,7 +217,7 @@ BluzDKModule.prototype.clientconnect = function() {
         log.debug('Bluz ' + instance.id + ':', 'still connecting to cloud...')
     } else if (this.clientStatus == 0) {
         log.debug('Bluz ' + instance.id + ':', 'connecting to cloud...')
-        this.client.connect(PARTICLE_PORT, PARTICLE_SERVER);
+        this.client.connect(settings.get('cloud:port'), settings.get('cloud:host'));
     }
 };
 

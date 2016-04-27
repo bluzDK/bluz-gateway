@@ -1,31 +1,24 @@
 #!/usr/bin/env node
-
-//var async = require('async');
 var noble = require('noble');
 var express = require('express');
+var log = require('loglevel');
+var settings=require('./settings.js');
+var BluzDKModule = require('./bluz-dk-module.js');
 
-//var sleep = require('sleep');
-//var net = require('net');
-
-
-var log = require('loglevel')
-
-var debuglevel= process.env.DEBUG;
+var debuglevel= settings.get('debug');
 var loggingLevels= ['trace','debug','info','warn','error'];
 if (loggingLevels.indexOf(debuglevel) > -1) {
     log.setDefaultLevel(debuglevel);
 } else {
-    log.setDefaultLevel('warn');
+    log.setDefaultLevel('error');
 }
 
 var server = express();
 
 
-var BluzDKModule = require('./bluz-dk-module.js');
-
 const BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db2';
 
-var serverPort = 3000;
+var serverPort = settings.get('serverPort');
 
 // const BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db3'; // WRONG: USED FOR TESTING ONLY
 
@@ -53,8 +46,8 @@ noble.on('warning', function(message) {
 
 
 var peripheralList = {};
+var shuttingDown=false;
 
-var removing = {};
 
 server.get('/connected-devices', function(req, res) {
     var jsonreturn={};
@@ -76,12 +69,13 @@ server.get('/connected-devices', function(req, res) {
     res.send(JSON.stringify(jsonreturn));
 });
 
-server.listen(serverPort, function () {
+var serverApp= server.listen(serverPort, function () {
     log.debug("Started server on port", serverPort);
 });
 
 
 function deletePeripheral(id) {
+    
     // TODO: Replace with event based deletion
 //    if (!removing[id]) {
 //        removing[id] = true;
@@ -98,11 +92,12 @@ function deletePeripheral(id) {
         //    delete removing[id];
         //}, 1500);
     }
-    noble.startScanning();
+    if (!shuttingDown)
+        noble.startScanning();
 }
 
 noble.on('discover', function(peripheral) {
-    if (!peripheralList[peripheral.id]) {
+    if (!peripheralList[peripheral.id] && settings.get('blacklist').indexOf(peripheral.id)<0) {
 
         noble.stopScanning(); // turn off scanning while connecting HACK?
 
@@ -133,4 +128,28 @@ noble.on('discover', function(peripheral) {
 
         });
     }
+});
+
+
+if (process.platform === "win32") {
+  var rl = require("readline").createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  rl.on("SIGINT", function () {
+    process.emit("SIGINT");
+  });
+}
+
+process.on("SIGINT", function () {
+    noble.stopScanning();
+    shuttingDown=true;
+    for (var key in peripheralList) {
+        peripheralList[key].dkModule.peripheral.disconnect();
+        peripheralList[key].dkModule.client.end();
+    }
+    serverApp.close();
+  //graceful shutdown
+    setTimeout(process.exit,1000);
 });
