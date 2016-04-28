@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
+'use strict';
+
 var noble = require( 'noble' );
 var express = require( 'express' );
 var log = require( 'loglevel' );
 var settings = require( './settings.js' );
 var BluzDKModule = require( './bluz-dk-module.js' );
+var EOL = require( 'os' ).EOL;
 
 var debuglevel = settings.get( 'DEBUG' );
 var loggingLevels = [ 'trace', 'debug', 'info', 'warn', 'error' ];
@@ -16,7 +19,7 @@ if ( loggingLevels.indexOf( debuglevel ) > -1 ) {
 
 var server = express( );
 
-const BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db2';
+var BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db2';
 
 var serverPort = settings.get( 'serverPort' );
 
@@ -45,7 +48,7 @@ server.get( '/connected-devices', function ( req, res ) {
   log.debug( 'Server Got request with headers', req.headers );
   //    log.debug(peripheralList);
   for ( var index in peripheralList ) {
-    periph = peripheralList[ index ].dkModule;
+    var periph = peripheralList[ index ].dkModule;
     if ( periph != null ) {
       jsonreturn[ periph.id ] = {
         "id": periph.id,
@@ -91,7 +94,7 @@ noble.on( 'discover', function ( peripheral ) {
 
     noble.stopScanning( ); // turn off scanning while connecting HACK?
 
-    log.info( 'Master: Found peripheral with ID ' + peripheral.id + ' and Name ' + peripheral.advertisement.localName );
+    log.info( 'Master: Found peripheral with ID: ' + peripheral.id + ' and Name: ' + peripheral.advertisement.localName );
 
     peripheralList[ peripheral.id ] = {
       found: true,
@@ -104,14 +107,14 @@ noble.on( 'discover', function ( peripheral ) {
         log.trace( services );
 
         if ( services.length > 0 ) {
-          log.info( 'Peripheral a bluz' );
+          log.info( 'Master: Peripheral a bluz' );
           var bluzMod = new BluzDKModule( peripheral, function ( ) {
             deletePeripheral( peripheral.id );
           } );
 
           peripheralList[ peripheral.id ].dkModule = bluzMod;
         } else {
-          log.info( 'Peripheral not a Bluz' );
+          log.info( 'Master: Peripheral not a Bluz' );
           peripheral.disconnect( );
         }
 
@@ -134,11 +137,15 @@ if ( process.platform === "win32" ) {
 }
 
 process.on( "SIGINT", function ( ) {
+  log.warn( );
+  log.warn( 'Master: Shutting Down' );
   noble.stopScanning( );
   shuttingDown = true;
   for ( var key in peripheralList ) {
-    peripheralList[ key ].dkModule.peripheral.disconnect( );
-    peripheralList[ key ].dkModule.client.end( );
+    log.info( 'Master: Shutting Down', key );
+    peripheralList[ key ].dkModule.shutDown( );
+    //~ peripheralList[ key ].dkModule.peripheral.disconnect( );
+    //~ peripheralList[ key ].dkModule.client.end( );
   }
   serverApp.close( );
   //graceful shutdown

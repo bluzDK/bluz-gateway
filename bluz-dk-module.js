@@ -1,12 +1,14 @@
-const noble = require( 'noble' );
-const util = require( 'util' );
+'use strict';
+
+var noble = require( 'noble' );
+var util = require( 'util' );
 var log = require( 'loglevel' );
-const net = require( 'net' );
+var net = require( 'net' );
 var settings = require( './settings.js' );
 
-const BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db2';
-const BLUZ_WRITE_CHAR = '871e022538ff77b1ed419fb3aa142db2';
-const BLUZ_READ_CHAR = '871e022438ff77b1ed419fb3aa142db2';
+var BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db2';
+var BLUZ_WRITE_CHAR = '871e022538ff77b1ed419fb3aa142db2';
+var BLUZ_READ_CHAR = '871e022438ff77b1ed419fb3aa142db2';
 
 function BluzDKModule( peripheral, destroycallback ) {
 
@@ -44,7 +46,7 @@ function BluzDKModule( peripheral, destroycallback ) {
   } );
 
   this.client.on( 'data', function ( data ) {
-    log.trace( 'Bluz ' + instance.id + ':', 'Received from spark.io:', data );
+    log.debug( 'Bluz ' + instance.id + ':', 'Received from spark.io:', data );
     var header = new Buffer( [ 0x01, 0x00 ] );
     instance.writeToDK( data, header );
   } );
@@ -86,7 +88,7 @@ BluzDKModule.prototype.updateRssi = function ( ) {
   } );
 }
 
-discoverCharacteristics = function ( instance, error, characteristics ) {
+var discoverCharacteristics = function ( instance, error, characteristics ) {
   characteristics.forEach( function ( characteristic ) {
     // Loop through each characteristic and match them to the
     // UUIDs that we know about.
@@ -139,12 +141,12 @@ discoverCharacteristics = function ( instance, error, characteristics ) {
   } )
 }
 
-discoverServices = function ( instance, error, services ) {
+var discoverServices = function ( instance, error, services ) {
   services.forEach( function ( service ) {
     //
     // This must be the service we were looking for.
     //
-    log.trace( 'Bluz ' + instance.id + ':', 'found service:', service.uuid );
+    log.debug( 'Bluz ' + instance.id + ':', 'found service:', service.uuid );
     //
     // So, discover its characteristics.
     //
@@ -169,7 +171,7 @@ BluzDKModule.prototype.connectToDK = function ( ) {
   var instance = this;
   // setup peripheral
   this.peripheral.once( 'disconnect', function ( ) {
-    log.debug( 'Bluz ' + instance.id + ' Disconnected' );
+    log.info( 'Bluz ' + instance.id + ' Disconnected' );
     instance.connected = false;
 
     instance.client.end( );
@@ -192,7 +194,7 @@ BluzDKModule.prototype.clientconnect = function ( ) {
   if ( this.clientStatus == 1 ) {
     log.debug( 'Bluz ' + instance.id + ':', 'still connecting to cloud...' )
   } else if ( this.clientStatus == 0 ) {
-    log.debug( 'Bluz ' + instance.id + ':', 'connecting to cloud...' )
+    log.info( 'Bluz ' + instance.id + ':', 'connecting to cloud...' )
     this.client.connect( settings.get( 'cloud:port' ), settings.get( 'cloud:host' ) );
   }
 };
@@ -215,7 +217,7 @@ BluzDKModule.prototype.writeToDK = function ( data, header, callback ) {
   } else {
     var maxChunk = 960;
 
-    for ( chunkPointer = 0; chunkPointer < data.byteLength; chunkPointer += maxChunk ) {
+    for ( var chunkPointer = 0; chunkPointer < data.byteLength; chunkPointer += maxChunk ) {
       log.debug( 'Bluz ' + instance.id + ':', 'Chunk Pointer', chunkPointer );
       var chunkLength = ( data.byteLength - chunkPointer > maxChunk ? maxChunk : data.byteLength - chunkPointer );
       log.debug( 'Bluz ' + instance.id + ':', 'ChunkLength', chunkLength );
@@ -223,11 +225,11 @@ BluzDKModule.prototype.writeToDK = function ( data, header, callback ) {
         this.safeWrite( header );
         log.debug( 'Bluz ' + instance.id + ':', 'Sent header to DK' );
       }
-      for ( i = 0; i < chunkLength; i += 20 ) {
+      for ( var i = 0; i < chunkLength; i += 20 ) {
         var size = ( chunkLength - i > 20 ? 20 : chunkLength - i );
         var tmpBuffer = new Buffer( size );
         var originalIndex = 0;
-        for ( j = i; j < i + size; j++ ) {
+        for ( var j = i; j < i + size; j++ ) {
           tmpBuffer[ originalIndex ] = data[ chunkPointer + j ];
           originalIndex++;
         }
@@ -237,7 +239,7 @@ BluzDKModule.prototype.writeToDK = function ( data, header, callback ) {
       }
 
       var eosBuffer = new Buffer( [ 0x03, 0x04 ] );
-      log.debug( 'Bluz ' + instance.id + ':', 'Wrote EOS to DK, total write length:', chunkPointer + chunkLength );
+      log.info( 'Bluz ' + instance.id + ':', 'Wrote Data and EOS to DK, total data length:', chunkPointer + chunkLength );
       this.safeWrite( eosBuffer );
     }
   }
@@ -264,16 +266,14 @@ BluzDKModule.prototype.setupDkReaders = function ( characteristic, callback ) {
 BluzDKModule.prototype.processData = function ( data ) {
 
   var instance = this;
-  log.trace( 'Bluz ' + instance.id + ':', 'recieved from Bluz', data );
+  log.debug( 'Bluz ' + instance.id + ':', 'recieved from Bluz', data );
   this.ulBufferLength = Math.max( 0, this.ulBufferLength ); // Possibly HACK: would only happen if byte length < header Bytes
   if ( data[ 0 ] == 0x03 && data[ 1 ] == 0x04 ) {
-    log.trace( 'Bluz ' + instance.id + ':', 'end of bluz message' );
+    log.debug( 'Bluz ' + instance.id + ':', 'end of bluz message' );
     var tmpBuffer = new Buffer( this.ulBufferLength );
     this.ulBuffer.copy( tmpBuffer, 0, 0, this.ulBufferLength );
     if ( this.lastService == 0x01 ) {
-      log.info( 'Bluz ' + instance.id + ':',
-        "Got a full buffer, attempting to send it up, length:", this.ulBufferLength
-      );
+      log.info( 'Bluz ' + instance.id + ':', "Got a full buffer, attempting to send it up, length:", this.ulBufferLength );
 
       this.writeToCloud( tmpBuffer );
     } else if ( this.lastService == 0x02 ) {
@@ -313,12 +313,16 @@ BluzDKModule.prototype.processData = function ( data ) {
 BluzDKModule.prototype.writeToCloud = function ( data ) {
   var instance = this;
   if ( this.clientStatus != 2 ) {
-    log.debug( 'Bluz ' + instance.id + ':', 'Not connected to cloud, trying to connect' );
+    log.info( 'Bluz ' + instance.id + ':', 'Not connected to cloud, trying to connect' );
     this.clientconnect( );
   } else {
-    log.trace( 'Bluz ' + instance.id + ':', 'Writing to cloud: ', data );
+    log.debug( 'Bluz ' + instance.id + ':', 'Writing to cloud: ', data );
     this.client.write( data, null );
   }
 };
+
+BluzDKModule.prototype.shutDown = function ( ) {
+  this.peripheral.disconnect( );
+}
 
 module.exports = BluzDKModule;
