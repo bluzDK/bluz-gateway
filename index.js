@@ -3,7 +3,6 @@
 'use strict';
 
 var noble = require( 'noble' );
-var express = require( 'express' );
 var log = require( 'loglevel' );
 var settings = require( './settings.js' );
 var BluzDKModule = require( './bluz-dk-module.js' );
@@ -17,11 +16,7 @@ if ( loggingLevels.indexOf( debuglevel ) > -1 ) {
   log.setDefaultLevel( 'error' );
 }
 
-var server = express( );
-
 var BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db2';
-
-var serverPort = settings.get( 'serverPort' );
 
 noble.on( 'stateChange', function ( state ) {
   if ( state === 'poweredOn' ) {
@@ -43,29 +38,7 @@ noble.on( 'warning', function ( message ) {
 var peripheralList = {};
 var shuttingDown = false;
 
-server.get( '/connected-devices', function ( req, res ) {
-  var jsonreturn = {};
-  log.debug( 'Server Got request with headers', req.headers );
-  //    log.debug(peripheralList);
-  for ( var index in peripheralList ) {
-    var periph = peripheralList[ index ].dkModule;
-    if ( periph != null ) {
-      jsonreturn[ periph.id ] = {
-        "id": periph.id,
-        "particle-id": periph.particleId,
-        "rssi": periph.rssi,
-        "uptime": ( Date.now( ) - periph.connectedTime ) / 1000
-      };
-    }
-  }
-  res.contentType( 'application/json' );
-  res.set( "Access-Control-Allow-Origin", "*" ); // allow access from other ports
-  res.send( JSON.stringify( jsonreturn ) );
-} );
-
-var serverApp = server.listen( serverPort, function ( ) {
-  log.debug( "Started server on port", serverPort );
-} );
+var server = require( './info-server.js' )( peripheralList );
 
 function deletePeripheral( id ) {
 
@@ -144,10 +117,17 @@ process.on( "SIGINT", function ( ) {
   for ( var key in peripheralList ) {
     log.info( 'Master: Shutting Down', key );
     peripheralList[ key ].dkModule.shutDown( );
-    //~ peripheralList[ key ].dkModule.peripheral.disconnect( );
-    //~ peripheralList[ key ].dkModule.client.end( );
   }
-  serverApp.close( );
+  server.server.close( );
   //graceful shutdown
-  setTimeout( process.exit, 1500 );
+  setTimeout( processExit, 1000 );
 } );
+
+function processExit( ) {
+  var numLeft = Object.keys( peripheralList ).length;
+  log.info( 'Master: ', numLeft, 'peripherals left' );
+  if ( numLeft == 0 )
+    process.exit( )
+  else
+    setTimeout( processExit, 1000 );
+}
