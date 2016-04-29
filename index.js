@@ -1,136 +1,136 @@
 #!/usr/bin/env node
 
-//var async = require('async');
+'use strict';
+
 var noble = require('noble');
-var express = require('express');
+var log = require('loglevel');
+var settings = require('./settings.js');
+var BluzDKModule = require('./bluz-dk-module.js');
+var EOL = require('os').EOL;
 
-//var sleep = require('sleep');
-//var net = require('net');
-
-
-var log = require('loglevel')
-
-var debuglevel= process.env.DEBUG;
-var loggingLevels= ['trace','debug','info','warn','error'];
+var debuglevel = settings.get('DEBUG');
+var loggingLevels = ['trace', 'debug', 'info', 'warn', 'error'];
 if (loggingLevels.indexOf(debuglevel) > -1) {
-    log.setDefaultLevel(debuglevel);
+  log.setDefaultLevel(debuglevel);
 } else {
-    log.setDefaultLevel('warn');
+  log.setDefaultLevel('error');
 }
 
-var server = express();
+var peripheralList = {};
+var shuttingDown = false;
+var BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db2';
 
-
-var BluzDKModule = require('./bluz-dk-module.js');
-
-const BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db2';
-
-var serverPort = 3000;
-
-// const BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db3'; // WRONG: USED FOR TESTING ONLY
-
-//~ var BLUZ_WRITE_CHAR = '871e022538ff77b1ed419fb3aa142db2';
-//~ var BLUZ_READ_CHAR = '871e022438ff77b1ed419fb3aa142db2';
-
-
-
-noble.on('stateChange', function(state) {
-    if (state === 'poweredOn') {
-        startScanning();
-    } else {
-        noble.stopScanning();
-    }
+noble.on('stateChange', function (state) {
+  if (state === 'poweredOn') {
+    startScanning();
+  } else {
+    noble.stopScanning();
+  }
 
 });
+
+noble.on('warning', function (message) {
+  log.warn('Master: noble warning:', message)
+});
+
+var server = require('./info-server.js')(peripheralList);
 
 function startScanning() {
-    noble.startScanning([], true);
+  noble.startScanning([], true);
 };
 
-noble.on('warning', function(message) {
-    log.info('Master noble warning:', message)
-});
-
-
-var peripheralList = {};
-
-var removing = {};
-
-server.get('/connected-devices', function(req, res) {
-    var jsonreturn={};
-    log.debug('Server Got request with headers',req.headers);
-//    log.debug(peripheralList);
-    for (var index in peripheralList) {
-        periph=peripheralList[index].dkModule;
-        if (periph != null) {
-            jsonreturn[periph.id] = {
-                "id": periph.id,
-                "particle-id": periph.particleId,
-                "rssi": periph.rssi,
-                "uptime": (Date.now() - periph.connectedTime)/1000
-            };
-        }
-    }
-    res.contentType('application/json');
-    res.set("Access-Control-Allow-Origin", "*");  // allow access from other ports
-    res.send(JSON.stringify(jsonreturn));
-});
-
-server.listen(serverPort, function () {
-    log.debug("Started server on port", serverPort);
-});
-
-
 function deletePeripheral(id) {
-    // TODO: Replace with event based deletion
-//    if (!removing[id]) {
-//        removing[id] = true;
-//    } else {
-//        return;
-//    }
-    noble.stopScanning(); // Not sure if necessary, but probably doesn't hurt
-    if (peripheralList[id]) {
+  // TODO: Replace with event based deletion
 
-        log.info('removing peripheral', id);
-        delete peripheralList[id].dkModule;
-        //setTimeout(function() {
-            delete peripheralList[id];
-        //    delete removing[id];
-        //}, 1500);
-    }
+  noble.stopScanning(); // Not sure if necessary, but probably doesn't hurt
+  if (peripheralList[id]) {
+    log.info('Master: Removing peripheral:', id);
+    delete peripheralList[id].dkModule;
+    delete peripheralList[id];
+  }
+  if (!shuttingDown)
     noble.startScanning();
 }
 
-noble.on('discover', function(peripheral) {
-    if (!peripheralList[peripheral.id]) {
+// Discovery
+noble.on('discover', function (peripheral) {
+  if (!peripheralList[peripheral.id] && settings.get('blacklist').indexOf(peripheral.id) < 0) {
 
-        noble.stopScanning(); // turn off scanning while connecting HACK?
+    noble.stopScanning(); // turn off scanning while connecting HACK?
 
-        log.warn('Master found peripheral with ID ' + peripheral.id + ' and Name ' + peripheral.advertisement.localName);
+    log.info('Master: Found peripheral with ID: ' + peripheral.id + ' and Name: ' + peripheral.advertisement.localName);
 
-        peripheralList[peripheral.id] = {
-            found: true,
-            dkModule: null
-        };
+    peripheralList[peripheral.id] = {
+      found: true,
+      dkModule: null
+    };
 
-        peripheral.connect(function(error) {
-            peripheral.discoverServices([BLUZ_SERVICE_UUID], function(error, services) {
+    peripheral.connect(function (error) {
+      peripheral.discoverServices([BLUZ_SERVICE_UUID], function (error, services) {
 
-                log.trace(services);
-                startScanning(); // connected, resume scanning
-                if (services.length > 0) {
-                    log.info('Peripheral a bluz');
-                    var bluzMod = new BluzDKModule(peripheral, function() {
-                        deletePeripheral(peripheral.id);
-                    });
-                    //~ 
-                    peripheralList[peripheral.id].dkModule = bluzMod;
-                } else {
-                    log.info('Peripheral not a Bluz');
-                    peripheral.disconnect();
-                }
-            });
+        log.trace(services);
 
-        });
-    }
+        if (services.length > 0) {
+          log.info('Master: Peripheral a bluz');
+          var bluzMod = new BluzDKModule(peripheral, function () {
+            deletePeripheral(peripheral.id);
+          });
+
+          peripheralList[peripheral.id].dkModule = bluzMod;
+        } else {
+          log.info('Master: Peripheral not a Bluz');
+          peripheral.disconnect();
+        }
+
+        startScanning(); // connected, resume scanning
+      });
+
+    });
+  }
 });
+
+// Program Exit Handling
+if (process.platform === "win32") {
+  var rl = require("readline").createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  rl.on("SIGINT", function () {
+    process.emit("SIGINT");
+  });
+}
+
+process.on("SIGINT", processExitHandler);
+
+process.on("SIGTERM", processExitHandler);
+
+process.stdout.on('error', function (err) {
+  // Handle Ctrl-C (SIGINT) when piped to another command
+  if (err.code == "EPIPE") {
+    processExitHandler();
+  }
+});
+
+function processExitHandler() {
+  //graceful shutdown
+  log.warn();
+  log.warn('Master: Shutting Down');
+  noble.stopScanning();
+  shuttingDown = true;
+  for (var key in peripheralList) {
+    log.info('Master: Shutting Down', key);
+    peripheralList[key].dkModule.shutDown();
+  }
+  server.close();
+  setTimeout(processExitChecker, 1000);
+}
+
+function processExitChecker() {
+  var numLeft = Object.keys(peripheralList).length;
+  log.info('Master: ', numLeft, 'peripherals left');
+  if (numLeft == 0)
+    process.exit()
+  else
+    setTimeout(processExitChecker, 1000);
+}
