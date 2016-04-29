@@ -1,11 +1,20 @@
 'use strict';
 
 module.exports = function ( peripheralList ) {
-
+  
+  var log = require( 'loglevel' );
+  
+  var settings = require( './settings.js' );
+  
+  if (!settings.get('serverEnabled')) {
+	  // server not enabled, we'll return a dummy
+	  module.close = function() {}
+	  return module;
+  }
+  
+  
   var express = require( 'express' );
 
-  var log = require( 'loglevel' );
-  var settings = require( './settings.js' );
 
   var app = express( );
 
@@ -108,9 +117,14 @@ module.exports = function ( peripheralList ) {
   } );
 
   module.server = app.listen( serverPort, function ( ) {
-    log.debug( "Started server on port", serverPort );
+    log.info( "Started server on port", serverPort );
   } );
 
+  module.close = function () {
+	  log.info ('Server: Shutting Down');
+	  module.server.close() 
+  }
+  
   return module;
 
 }

@@ -32,7 +32,7 @@ settings.env( );
 settings.file( settingsFile );
 
 for ( var key in defaultSettings ) {
-  if ( !settings.get( key ) )
+  if ( typeof settings.get( key ) === "undefined" )
     settings.set( key, defaultSettings[ key ] )
 }
 

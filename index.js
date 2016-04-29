@@ -130,7 +130,7 @@ function processExitHandler( ) {
     log.info( 'Master: Shutting Down', key );
     peripheralList[ key ].dkModule.shutDown( );
   }
-  server.server.close( );
+  server.close( );
   setTimeout( processExitChecker, 1000 );
 }
 
