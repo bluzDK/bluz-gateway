@@ -1,5 +1,11 @@
 # Bluz Node Gateway
 
+[Bluz](http://bluz.io/) is a Bluetooth LE development kit that connects low cost, low energy sensors to the Internet of Things. Each bluz DK can hook to the [Particle](https://www.particle.io/) cloud and be controlled through a REST API, receive Over the Air firmware updates, and integrate with third party services such as IFTTT. 
+
+Using gateway solutions, bluz can stay online without the need of a smartphone, allowing users to create battery powered project that can stay online for months or years, and always be accessible. 
+
+This project turns a Raspberry Pi or C.H.I.P. into a gateway, allowing it to be the central hub for the entire network of devices. 
+
 Works on at least two DKs on the C.H.I.P.
 
 Defaults to installing in ~/node_modules/.bin/bluz-gateway
