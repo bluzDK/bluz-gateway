@@ -109,7 +109,11 @@ if ( process.platform === "win32" ) {
   } );
 }
 
-process.on( "SIGINT", function ( ) {
+process.on( "SIGINT", processExitHandler );
+
+process.on( "SIGTERM", processExitHandler );
+
+function processExitHandler( ) {
   log.warn( );
   log.warn( 'Master: Shutting Down' );
   noble.stopScanning( );
@@ -121,7 +125,7 @@ process.on( "SIGINT", function ( ) {
   server.server.close( );
   //graceful shutdown
   setTimeout( processExit, 1000 );
-} );
+}
 
 function processExit( ) {
   var numLeft = Object.keys( peripheralList ).length;
