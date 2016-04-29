@@ -11,7 +11,7 @@
 
 # From https://github.com/fhd/init-script-template
 
-##### Change these call ####
+##### Change these all ####
 dir="/home/daniel/"
 cmd="/home/daniel/node_modules/.bin/bluz-gateway"
 user="daniel"
@@ -41,9 +41,9 @@ case "$1" in
         echo "Starting $name"
         cd "$dir"
         if [ -z "$user" ]; then
-            sudo $cmd >> "$stdout_log" 2>> "$stderr_log" &
+            sudo $cmd &>> "$stdout_log" & # 2>> "$stderr_log" &
         else
-            sudo -u "$user" $cmd >> "$stdout_log" 2>> "$stderr_log" &
+            sudo -u "$user" $cmd &>> "$stdout_log" & # 2>> "$stderr_log" &
         fi
         echo $! > "$pid_file"
         if ! is_running; then
