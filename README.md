@@ -1,4 +1,5 @@
-# Bluz Node Gateway
+# Bluz Gateway for NodeJS
+[![NPM](https://nodei.co/npm/bluz-gateway.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/bluz-gateway/)
 
 [Bluz](http://bluz.io/) is a Bluetooth LE development kit that connects low cost, low energy sensors to the Internet of Things. Each bluz DK can hook to the [Particle](https://www.particle.io/) cloud and be controlled through a REST API, receive Over the Air firmware updates, and integrate with third party services such as IFTTT. 
 
@@ -6,46 +7,58 @@ Using gateway solutions, bluz can stay online without the need of a smartphone, 
 
 This project turns a Raspberry Pi or C.H.I.P. into a gateway, allowing it to be the central hub for the entire network of devices. 
 
-Works on at least two DKs on the C.H.I.P.
+## Basic installation on Linux
+For Debian-like Linuxes (Raspbian, C.H.I.P.), global install method.  You should just be able to copy and paste this into a shell.  If you already have Node installed, skip the first line.
 
-Defaults to installing in ~/node_modules/.bin/bluz-gateway
-
-can change debug level by: `DEBUG=debug ~/node_modules/.bin/bluz-gateway`
-
-valid debug levels are `trace, debug, info, warn, error`
-
-View information about connected devices once it's running with `curl  http://localhost:3000/connected-devices`
-
-
-## Basic installation on C.H.I.P.
 ```bash
-curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash - # to get latest nodejs
+curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash - # get latest nodejs
 
-sudo apt-get install bluetooth bluez libbluetooth-dev libudev-dev nodejs git  # dependencies
+sudo apt-get install bluetooth bluez libbluetooth-dev libudev-dev nodejs  # dependencies
 
-npm install mumblepins/bluz-gateway # could also with -g for global usage
+sudo setcap cap_net_raw+eip $(eval readlink -f `which node`)  # Allows us to use without root access
 
-sudo setcap cap_net_raw+eip $(eval readlink -f `which node`)  # needed to run without sudo
+# From https://docs.npmjs.com/getting-started/fixing-npm-permissions, we want to set the global npm install directory to be in our user directory, so we don't need to use root permissions
+mkdir ~/.npm-global
+npm config set prefix '~/.npm-global'
+echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
 
-echo 'export PATH=$PATH:~/node_modules/.bin/' >> ~/.bashrc  # to add the binary to path
+# Install the gateway
+npm install -g bluz-gateway
 ```
 
-Init script example is shown in examples/init/.  Copy to /etc/init.d/ and set executable, edit the 3 lines that are localized to the user directory, and run `update-rc.d bluz-gateway defaults` to have the gateway start on reboot
+The gateway is installed, so let's run it with `bluz-gateway`.  Assuming that everything went well, you should see a few lines of text describing the devices it's found, and no errors. Press `Ctrl-C` to exit. Now, let's set it up to run at boot.
 
+```bash
+# Change username in startup script, and copy to init folder
+sed 's/OUR_USER_NAME/'$USER'/'  ~/.npm-global/lib/node_modules/bluz-gateway/example/init-script/bluz-gateway | sudo tee /etc/init.d/bluz-gateway
 
-## Some basic info about the Bluz- Particle bridging
+# Add to run at start
+sudo update-rc.d bluz-gateway defaults
+```
+You should now be able to start it up with `sudo /etc/init.d/bluz-gateway start`, and view the log file at `/var/log/bluz-gateway.log`
 
-First, enable notify (write [0x01,0x00] to CCCD descriptor)
+## Config
+Upon first startup, the program creates a config file at `~/.bluz-gw/config.json`
 
-* Cloud --> DK:
- * sends on `871e022538ff77b1ed419fb3aa142db2` characteristic
- * send a [0x01,0x00] header
- * send data in 20 byte chunks, max total length 960 bytes;
- * send a [0x03,0x04] end 
-* DK -> Cloud
- * notification should have been enabled on read (`871e022438ff77b1ed419fb3aa142db2`) characteristic
- * have to buffer data, as DK can only send in 20 byte chunks
- * first chunk starts with the service type (0x01 is for cloud, 0x02 is the Particle ID data (see below))
- * after all chunks of the data to be sent are done, the DK will also end strings with a [0x03,0x04] 
- * 
-* Also, a [0x02,0x00] data write with _no_ header will result in the next data from the DK being the Particle ID  
+ - `serverPort`: Changes the port that the info server runs on
+ - `serverEnabled`: Enables/disables the info server
+ - `blacklist`: An array of BL MAC addresses of DKs we should not connect to
+ - `cloud:host` and `:port`: If you want to run a local cloud
+ - `DEBUG`: debug levels -
+	 - `error`: show only errors
+	 - `warn`: default, only shows very basic info
+	 - `info`: shows up and down packet events
+	 - `debug`: a lot
+	 - `trace`: really a lot
+
+## Info Server
+Upon startup the gateway starts a very basic REST-like server on port 3000 (default).  It currently has commands of (with host_addr being localhost, or ip address of the server):
+
+ - `GET http://host_addr:3000/connected-device` Returns connected device info
+ - `GET http://host_addr:3000/blacklist` Currently blacklisted devices
+ - `POST text/plain  http://host_addr:3000/blacklist` Add a device to blacklist (12 digit hexadecimal MAC address in POST text/plain body, probably gotten from connected-devices)
+ - `DELETE http://host_addr:3000/blacklist/:id` Delete a device from blacklist
+
+## Protocol
+[See wiki](https://github.com/mumblepins/bluz-gateway/wiki/General-Info-about-Bluz-Gateway-Protocol).
