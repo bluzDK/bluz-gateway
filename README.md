@@ -38,6 +38,12 @@ sudo update-rc.d bluz-gateway defaults
 ```
 You should now be able to start it up with `sudo /etc/init.d/bluz-gateway start`, and view the log file at `/var/log/bluz-gateway.log`
 
+## Updating
+```bash
+npm update -g bluz-gateway
+sudo /etc/init.d/bluz-gateway restart
+```
+
 ## Config
 Upon first startup, the program creates a config file at `~/.bluz-gw/config.json`
 
