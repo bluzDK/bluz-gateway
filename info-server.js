@@ -79,8 +79,9 @@ module.exports = function (peripheralList) {
     res.send(JSON.stringify(settings.get('blacklist')));
   });
 
-  app.delete('/blacklist', function (req, res) {
-    var id = req.body;
+  app.delete('/blacklist/:id', function (req, res) {
+    // var id = req.body;
+    var id = req.params.id;
     if (!(/^[0-9A-F]{12}$/i.test(id))) {
       res.status(400).send('Bad Format');
       return;
@@ -115,11 +116,11 @@ module.exports = function (peripheralList) {
   });
 
   module.server = app.listen(serverPort, function () {
-    log.info("Server: Starting on port:", serverPort);
+    log.warn("Server: Starting on port:", serverPort);
   });
 
   module.close = function () {
-    log.info('Server: Shutting Down');
+    log.warn('Server: Shutting Down');
     module.server.close()
   }
 

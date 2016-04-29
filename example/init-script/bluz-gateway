@@ -11,10 +11,11 @@
 
 # From https://github.com/fhd/init-script-template
 
-##### Change these all ####
-dir="/home/daniel/"
-cmd="/home/daniel/node_modules/.bin/bluz-gateway"
-user="daniel"
+##### Change these ####
+user="OUR_USER_NAME"
+
+dir="/home/$user"
+cmd="/home/$user/.npm-global/bin/bluz-gateway"
 ############################
 
 
