@@ -113,7 +113,15 @@ process.on( "SIGINT", processExitHandler );
 
 process.on( "SIGTERM", processExitHandler );
 
+process.stdout.on( 'error', function ( err ) {
+  // Handle Ctrl-C (SIGINT) when piped to another command
+  if ( err.code == "EPIPE" ) {
+    processExitHandler( );
+  }
+} );
+
 function processExitHandler( ) {
+  //graceful shutdown
   log.warn( );
   log.warn( 'Master: Shutting Down' );
   noble.stopScanning( );
@@ -123,15 +131,14 @@ function processExitHandler( ) {
     peripheralList[ key ].dkModule.shutDown( );
   }
   server.server.close( );
-  //graceful shutdown
-  setTimeout( processExit, 1000 );
+  setTimeout( processExitChecker, 1000 );
 }
 
-function processExit( ) {
+function processExitChecker( ) {
   var numLeft = Object.keys( peripheralList ).length;
   log.info( 'Master: ', numLeft, 'peripherals left' );
   if ( numLeft == 0 )
     process.exit( )
   else
-    setTimeout( processExit, 1000 );
+    setTimeout( processExitChecker, 1000 );
 }
