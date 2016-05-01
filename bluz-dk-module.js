@@ -54,15 +54,15 @@ function BluzDKModule(peripheral, destroycallback) {
     instance.clientStatus = 0;
     log.info('Bluz ' + instance.id + ':', 'Cloud connect closed');
     if (instance.connected) {
-      log.info('Bluz ' + instance.id + ':', 'trying to reconnect in 2 seconds');
+      log.info('Bluz ' + instance.id + ':', 'trying to reconnect cloud in 1 second');
 
       setTimeout(function () {
         if (instance.connected) {
-          log.info('Bluz ' + instance.id + ':', 'reconnecting...');
+          log.info('Bluz ' + instance.id + ':', 'cloud reconnecting...');
 
           instance.clientconnect();
         }
-      }, 2000);
+      }, 1000);
     }
   });
 
