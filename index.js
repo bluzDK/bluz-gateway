@@ -30,16 +30,16 @@ noble.on('stateChange', function (state) {
 });
 
 function startScanHelper() {
-  if (shuttingDown)
+  if (shuttingDown || scanning)
     return;
   scanning = true;
   if (noble.state === 'poweredOn')
-  noble.startScanning([], true);
+    noble.startScanning([], true);
 }
 
 function stopScanHelper() {
-  //~ if (!scanning)
-  //~ return;
+  if (!scanning)
+    return;
   scanning = false;
   noble.stopScanning();
 }
@@ -65,6 +65,8 @@ function deletePeripheral(id) {
 // Discovery
 noble.on('discover', function (peripheral) {
   if (!peripheralList[peripheral.id] && settings.get('blacklist').indexOf(peripheral.id) < 0) {
+    //~ log.info(peripheral);
+    //~ process.exit();
     stopScanHelper(); // turn off scanning while connecting HACK?
 
     log.info('Master: Found peripheral with ID: ' + peripheral.id + ' and Name: ' + peripheral.advertisement.localName);
@@ -77,7 +79,8 @@ noble.on('discover', function (peripheral) {
 
     peripheral.connect(function (error) {
       peripheral.discoverServices([BLUZ_SERVICE_UUID], function (error, services) {
-
+        if (error)
+          log.error('Master: Discover services error:', error);
         log.trace(services);
 
         if (services.length > 0) {
