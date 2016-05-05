@@ -62,11 +62,25 @@ function deletePeripheral(id) {
   startScanHelper();
 }
 
+function checkForDeadPeripherals() {
+  for (var id in peripheralList) {
+    var peripheral = peripheralList[id];
+    if (settings.get('deviceGroups:whitelist').indexOf(peripheral.name) > -1 &&
+      (peripheral.dkModule == null || !peripheral.dkModule.connected)) {
+      deletePeripheral(id);
+    }
+  }
+  setTimeout(checkForDeadPeripherals, 5000);
+
+}
+
+checkForDeadPeripherals();
+
 // Discovery
 noble.on('discover', function (peripheral) {
-  if (!peripheralList[peripheral.id] && settings.get('blacklist').indexOf(peripheral.id) < 0) {
-    //~ log.info(peripheral);
-    //~ process.exit();
+  if (!peripheralList[peripheral.id] && settings.get('blacklist').indexOf(peripheral.id) < 0 &&
+    settings.get('deviceGroups:whitelist').indexOf(peripheral.advertisement.localName) > -1) {
+
     stopScanHelper(); // turn off scanning while connecting HACK?
 
     log.info('Master: Found peripheral with ID: ' + peripheral.id + ' and Name: ' + peripheral.advertisement.localName);
