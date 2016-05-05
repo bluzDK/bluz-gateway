@@ -17,6 +17,9 @@ function BluzDKModule(peripheral, destroycallback) {
   this.connectedTime = Date.now();
   this.clientStatus = 0; // 0 -> disconnected, 1-> connecting, 2-> connected
 
+  this.writeBuffer = [];
+  this.writing = false;
+
   this.destroycallback = destroycallback;
   this.peripheral = peripheral;
   this.id = peripheral.id;
@@ -74,6 +77,37 @@ function BluzDKModule(peripheral, destroycallback) {
 
   this.updateRssi();
 
+};
+
+BluzDKModule.prototype.writeNext = function (keepWriting, callback) {
+  if (!this.connected) {
+    // not connected
+    return;
+  }
+  if (this.writing && !keepWriting) {
+    // currently writing, and not called by ourself
+    return;
+  }
+  this.writing = true;
+  if (this.writeBuffer.length < 1) {
+    // no more to write
+    this.writing = false;
+    return;
+  }
+  var instance = this;
+  var nextData = this.writeBuffer.shift();
+  if (typeof (nextData) === 'undefined') { //this really shouldn't happen
+    return this.writeNext(true);
+  }
+  // we've reached here, let's write
+  log.debug('Bluz ' + instance.id + ': writing:', nextData);
+  this.writeToDkCharacteristic.write(nextData, true, function (error) {
+    if (error) {
+      log.error('Bluz ' + instance.id + ' Error :', error);
+    }
+    //    setTimeout(function() {instance.writeNext(true); }, 5); // TODO: this timeout shouldn't be necessary (in theory)
+    instance.writeNext(true);
+  });
 };
 
 BluzDKModule.prototype.updateRssi = function () {
@@ -195,11 +229,11 @@ BluzDKModule.prototype.clientconnect = function () {
   }
 };
 
-BluzDKModule.prototype.safeWrite = function (data) {
-  if (this.connected) {
-    this.writeToDkCharacteristic.write(data, true);
-  };
-};
+//BluzDKModule.prototype.safeWrite = function (data) {
+//  if (this.connected) {
+//    this.writeToDkCharacteristic.write(data, true);
+//  };
+//};
 
 BluzDKModule.prototype.writeToDK = function (data, header, callback) {
   var instance = this;
@@ -218,8 +252,9 @@ BluzDKModule.prototype.writeToDK = function (data, header, callback) {
       var chunkLength = (data.byteLength - chunkPointer > maxChunk ? maxChunk : data.byteLength - chunkPointer);
       log.debug('Bluz ' + instance.id + ':', 'ChunkLength', chunkLength);
       if (header != null) {
-        this.safeWrite(header);
-        log.debug('Bluz ' + instance.id + ':', 'Sent header to DK');
+        //this.safeWrite(header);
+        this.writeBuffer.push(header);
+        log.debug('Bluz ' + instance.id + ':', 'Sent header to Buffer');
       }
       for (var i = 0; i < chunkLength; i += 20) {
         var size = (chunkLength - i > 20 ? 20 : chunkLength - i);
@@ -230,15 +265,18 @@ BluzDKModule.prototype.writeToDK = function (data, header, callback) {
           originalIndex++;
         }
 
-        log.debug('Bluz ' + instance.id + ':', 'Writing this to DK:', tmpBuffer);
-        this.safeWrite(tmpBuffer);
+        log.debug('Bluz ' + instance.id + ':', 'Writing this to Buffer:', tmpBuffer);
+        //this.safeWrite(tmpBuffer);
+        this.writeBuffer.push(tmpBuffer);
       }
 
       var eosBuffer = new Buffer([0x03, 0x04]);
-      log.info('Bluz ' + instance.id + ':', 'Wrote Data and EOS to DK, total data length:', chunkPointer + chunkLength);
-      this.safeWrite(eosBuffer);
+      log.info('Bluz ' + instance.id + ':', 'Wrote Data and EOS to Buffer, total data length:', chunkPointer + chunkLength);
+      //this.safeWrite(eosBuffer);
+      this.writeBuffer.push(eosBuffer);
     }
   }
+  this.writeNext();
   if (callback) callback();
 };
 
