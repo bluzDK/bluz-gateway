@@ -18,16 +18,31 @@ if (loggingLevels.indexOf(debuglevel) > -1) {
 
 var peripheralList = {};
 var shuttingDown = false;
+var scanning = false;
 var BLUZ_SERVICE_UUID = '871e022338ff77b1ed419fb3aa142db2';
 
 noble.on('stateChange', function (state) {
   if (state === 'poweredOn') {
-    startScanning();
+    startScanHelper();
   } else {
-    noble.stopScanning();
+    stopScanHelper();
   }
-
 });
+
+function startScanHelper() {
+  if (shuttingDown || scanning)
+    return;
+  scanning = true;
+  if (noble.state === 'poweredOn')
+    noble.startScanning([], true);
+}
+
+function stopScanHelper() {
+  if (!scanning)
+    return;
+  scanning = false;
+  noble.stopScanning();
+}
 
 noble.on('warning', function (message) {
   log.warn('Master: noble warning:', message)
@@ -35,39 +50,37 @@ noble.on('warning', function (message) {
 
 var server = require('./info-server.js')(peripheralList);
 
-function startScanning() {
-  noble.startScanning([], true);
-};
-
 function deletePeripheral(id) {
   // TODO: Replace with event based deletion
 
-  noble.stopScanning(); // Not sure if necessary, but probably doesn't hurt
+  stopScanHelper(); // Not sure if necessary, but probably doesn't hurt
   if (peripheralList[id]) {
     log.info('Master: Removing peripheral:', id);
     delete peripheralList[id].dkModule;
     delete peripheralList[id];
   }
-  if (!shuttingDown)
-    noble.startScanning();
+  startScanHelper();
 }
 
 // Discovery
 noble.on('discover', function (peripheral) {
   if (!peripheralList[peripheral.id] && settings.get('blacklist').indexOf(peripheral.id) < 0) {
-
-    noble.stopScanning(); // turn off scanning while connecting HACK?
+    //~ log.info(peripheral);
+    //~ process.exit();
+    stopScanHelper(); // turn off scanning while connecting HACK?
 
     log.info('Master: Found peripheral with ID: ' + peripheral.id + ' and Name: ' + peripheral.advertisement.localName);
 
     peripheralList[peripheral.id] = {
       found: true,
-      dkModule: null
+      dkModule: null,
+      name: peripheral.advertisement.localName
     };
 
     peripheral.connect(function (error) {
       peripheral.discoverServices([BLUZ_SERVICE_UUID], function (error, services) {
-
+        if (error)
+          log.error('Master: Discover services error:', error);
         log.trace(services);
 
         if (services.length > 0) {
@@ -82,7 +95,7 @@ noble.on('discover', function (peripheral) {
           peripheral.disconnect();
         }
 
-        startScanning(); // connected, resume scanning
+        startScanHelper(); // connected, resume scanning
       });
 
     });
@@ -116,21 +129,34 @@ function processExitHandler() {
   //graceful shutdown
   log.warn();
   log.warn('Master: Shutting Down');
-  noble.stopScanning();
+
   shuttingDown = true;
+  stopScanHelper();
   for (var key in peripheralList) {
-    log.info('Master: Shutting Down', key);
-    peripheralList[key].dkModule.shutDown();
+
+    if (peripheralList[key].dkModule != null) {
+      log.info('Master: Shutting Down', key);
+
+      peripheralList[key].dkModule.shutDown();
+    } else {
+      delete(peripheralList[key]);
+    }
   }
   server.close();
-  setTimeout(processExitChecker, 1000);
+  setTimeout(processExitChecker, 1000); // graceful check
+  setTimeout(function () {
+    log.warn('Master: Hard Shutdown');
+    process.exit();
+  }, 10000); // hard shutdown failsafe
 }
 
 function processExitChecker() {
   var numLeft = Object.keys(peripheralList).length;
   log.info('Master: ', numLeft, 'peripherals left');
-  if (numLeft == 0)
+  if (numLeft == 0) {
+    log.warn('Master: Shutdown');
     process.exit()
-  else
+  } else {
     setTimeout(processExitChecker, 1000);
+  }
 }
