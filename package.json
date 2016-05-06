@@ -1,8 +1,8 @@
 {
   "name": "bluz-gateway",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "NodeJS gateway for the Bluz to the Particle Cloud",
-  "main": "./index.js",
+  "main": "./app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -20,7 +20,7 @@
     "nconf": "~0.8.4",
     "body-parser": "~1.15.0"
   },
-  "bin": "./index.js",
+  "bin": "./app.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/mumblepins/bluz-gateway.git"
