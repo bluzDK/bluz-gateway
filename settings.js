@@ -24,7 +24,9 @@ var defaultSettings = {
   'cloud:port': 5683,
   'blacklist': [], // note: based on BL MAC Address
   'serverEnabled': true,
-  'DEBUG': 'warn'
+  'DEBUG': 'warn',
+  'deviceGroups:whitelist': ['Bluz DK'],
+  //'deviceGroups:blacklist'=[]  //not enabled
 }
 
 settings.argv();
