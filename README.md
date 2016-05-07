@@ -44,6 +44,9 @@ npm update -g bluz-gateway
 sudo /etc/init.d/bluz-gateway restart
 ```
 
+
+## Troubleshooting
+If nothing seems to be working, first increase the debug level to 'info' in the config (below).  Sometimes the Bluetooth stack in Linux will just stop working (it seems to be related to unclean disconnect and BLE shutdown), and you'll get either nothing showing up after the server start, or just "found peripheral with ID ..." and nothing after that.  Often times a `sudo hciconfig hci0 reset` command will clear things up, or sometimes that will timeout, in which case a good old reboot will solve it.
 ## Config
 Upon first startup, the program creates a config file at `~/.bluz-gw/config.json`
 
