@@ -105,8 +105,8 @@ BluzDKModule.prototype.writeNext = function (keepWriting, callback) {
     if (error) {
       log.error('Bluz ' + instance.id + ' Error :', error);
     }
-    //    setTimeout(function() {instance.writeNext(true); }, 5); // TODO: this timeout shouldn't be necessary (in theory)
-    instance.writeNext(true);
+    setTimeout(function() {instance.writeNext(true); }, 5); // TODO: this timeout shouldn't be necessary (in theory)
+    // instance.writeNext(true);
   });
 };
 
