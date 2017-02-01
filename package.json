@@ -13,12 +13,14 @@
   "author": "Daniel Sullivan",
   "license": "MIT",
   "dependencies": {
-    "bluetooth-hci-socket": "~0.4.4",
     "noble": "^1.5.0",
     "loglevel": "^1.4.0",
     "express": "^4.13.4",
     "nconf": "~0.8.4",
     "body-parser": "~1.15.0"
+  },
+  "optionalDependencies": {
+    "bluetooth-hci-socket": "~0.4.4"
   },
   "bin": "./app.js",
   "repository": {
