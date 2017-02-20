@@ -74,7 +74,7 @@ function checkForDeadPeripherals() {
 
 }
 
-checkForDeadPeripherals();
+// checkForDeadPeripherals();
 
 // Discovery
 noble.on('discover', function (peripheral) {
