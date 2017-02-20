@@ -8,23 +8,9 @@ Using gateway solutions, bluz can stay online without the need of a smartphone, 
 This project turns a Raspberry Pi or C.H.I.P. into a gateway, allowing it to be the central hub for the entire network of devices. 
 
 ## Basic installation on Linux
-For Debian-like Linuxes (Raspbian, C.H.I.P.), global install method.  You should just be able to copy and paste this into a shell.  If you already have Node installed, skip the first line.
-
-```bash
-curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash - # get latest nodejs
-
-sudo apt-get install bluetooth bluez libbluetooth-dev libudev-dev nodejs  # dependencies
-
-sudo setcap cap_net_raw+eip $(eval readlink -f `which node`)  # Allows us to use without root access
-
-# From https://docs.npmjs.com/getting-started/fixing-npm-permissions, we want to set the global npm install directory to be in our user directory, so we don't need to use root permissions
-mkdir ~/.npm-global
-npm config set prefix '~/.npm-global'
-echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
-source ~/.bashrc
-
-# Install the gateway
-npm install -g bluz-gateway
+For Debian-like Linuxes (Raspbian, C.H.I.P.), there is a simple installation script available. To run, type the following command into a shell prompt:
+```
+source <(curl -s http://gateway.bluz.io/install)
 ```
 
 The gateway is installed, so let's run it with `bluz-gateway`.  Assuming that everything went well, you should see a few lines of text describing the devices it's found, and no errors. Press `Ctrl-C` to exit. Now, let's set it up to run at boot.
