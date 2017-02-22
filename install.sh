@@ -1,4 +1,4 @@
-curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash - # get latest nodejs
+curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash - # get latest nodejs
 
 sudo apt-get install git bluetooth bluez libbluetooth-dev libudev-dev nodejs  # dependencies
 
